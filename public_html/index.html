@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>CreateButtons - TEST</title>
+        
+        <style>
+            
+            * {
+                box-sizing: border-box;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+                font: 1em Arial,sans-serif;
+            }
+            
+            .button {
+                background-color: #77f;
+                width: 100px;
+                height: 30px;
+                margin: 10px;
+                text-align: center;
+                padding-top: 6px;
+            }
+            .button.active {
+                background-color: #3c3;
+            } 
+            .button.hover {
+                background-color: #c33;
+            } 
+            
+        </style>
+        
+        
+    </head>
+    <body>
+        
+        <div id="container1"></div>
+        <div id="container2"></div>
+        
+        
+        <script src="js/createButtons_Vanilla.js"></script>
+        <script>
+            
+            var aData = [
+                {text: 'btn1', attr: { class: "bla" }},
+                {text: 'btn2', attr: { id: "bla" }},
+                {text: 'btn3'}
+            ];
+            
+        </script>
+        <script>
+            
+            createButtons({
+               data: aData,
+               container: document.getElementById('container1'),
+               onHover: function (data) {
+                   
+//                   console.log(this);
+//                   console.log(data);
+                   
+               }
+            }).setActive(0);
+            
+        </script>
+    </body>
+</html>
