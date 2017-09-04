@@ -1,14 +1,25 @@
 function createButtons(config) {
-     
-    var container   = this.nodeType && this.nodeType === 1 ? this : config.container;
+            
+    var container       = this.nodeType && this.nodeType === 1 ? this : config.container;
     var data        = config.data;
-    var type        = config.type        || 'div';
-    var onClick     = config.onClick     || null;
-    var onHover     = config.onHover     || null;
-    var className   = config.className   || 'button';
-    var activeClass = config.activeClass || 'active';
-    var hoverClass  = config.hoverClass  || 'hover';
-        
+    
+    var elementType   = config.type        || 'div';
+    
+    var callbacks     = {};
+    callbacks.click = config.onClick     || null;
+    callbacks.hover = config.onHover     || null;
+    callbacks.focus = config.onFocus     || null;
+    
+    var classes       = {};
+    classes.name      = config.className   || 'button';
+    classes.active    = config.activeClass || 'active';
+    classes.hover     = config.hoverClass  || 'hover';
+    classes.focus     = config.hoverClass  || 'focus';
+    
+    var globals       = {};
+    globals.css       = config.css         || {};
+    globals.attr      = config.attr        || {};
+    
     var buttons = [];    
     var currentState = {};
     
@@ -23,7 +34,7 @@ function createButtons(config) {
         
         return {
             buttons: buttons,
-            setActive: function (btn) { setState(btn, activeClass); }
+            setActive: function (btn) { setClass(btn, classes.active); }
         };
     };
     return main();
@@ -32,14 +43,21 @@ function createButtons(config) {
     function createButton(nr, data) {
         
         var text = data[nr].text || '';
-        var css  = data[nr].css  || {};
-        var attr = data[nr].attr || {};
-
-        var btn = document.createElement(type);
-        btn.innerText = text;
-        btn.className = className;
-        btn.setAttribute('data-nr', nr);
+        var html = data[nr].html || '';
+        var css  = mergeObjs({}, globals.css,  data[nr].css);
+        var attr = mergeObjs({ tabindex: 1 }, globals.attr, data[nr].attr);
         
+        var btn = document.createElement(elementType);
+        btn.className = classes.name;
+        btn.setAttribute('data-nr', nr);
+        btn.tabindex = 1;
+                
+        if (html) {
+            btn.innerHTML = html;
+        } else if (text) {
+            btn.innerText = text;
+        }
+                
         for (var rule in css) {
             btn.style[rule] = css[rule];
         }
@@ -49,61 +67,75 @@ function createButtons(config) {
                 btn.classList.add(attr[a]);
                 break;
             }
-            
             if (a === 'id') {
-                attr[a] += '_' + nr;
+                attr[a] += '_' + (+nr - 1);
             }
             
             btn.setAttribute(a, attr[a]);
         }
-             
+        
+        btn.addEventListener('focus', onFocus);
+        btn.addEventListener('blur',  onBlur);
+       
         return btn;
     }
     
     function installHandler() {
-
-        container.addEventListener('click',     onButtonClick);
-        container.addEventListener('mouseover', onButtonHover);
-        container.addEventListener('mouseout',  onButtonOut);
-
+        container.addEventListener('click',     onClick);
+        container.addEventListener('mouseover', onMouseOver);
+        container.addEventListener('mouseout',  onMouseOut);
     }
 
-    function onButtonClick (evt) {
-
+    function onClick (evt) {
+        addState(evt, classes.active, callbacks.click);
+    }
+    
+    function onMouseOver (evt) {
+        addState(evt, classes.hover, callbacks.hover);
+    }
+    
+    function onFocus (evt) {
+        addState(evt, classes.focus, callbacks.focus);
+    }
+    
+    function onMouseOut (evt) {
+        removeClass(evt.target, classes.hover);
+    }   
+    
+    function onBlur (evt) {
+        removeClass(evt.target, classes.focus);
+    }   
+    
+    function addState (evt, className, cb) {
+        
         var btn = evt.target;
-        
-        setState(btn, activeClass);
-        
-        if (!isFunction(onClick)) { return; }
-        callCB(onClick, btn, btn.getAttribute('data-nr'));
-    }
-    
-    function onButtonHover (evt) {
+                        
+        if (buttons.indexOf(btn) < 0) {
+            btn = findParentBtn(btn);  
+            
+            if (btn === null) {
+                return;
+            }
+        }
 
-        var btn = evt.target;
+        setClass(btn, className);     
         
-        setState(btn, hoverClass);
+        if (!isFunction(cb)) { return; }
+        callCB(cb, btn, btn.getAttribute('data-nr'));
         
-        if (!isFunction(onHover)) { return; }
-        callCB(onHover, btn, btn.getAttribute('data-nr'));
+    } 
+        
+    function setClass (btn, state, toggle) {
+        changeClass(btn, state, toggle, true);
     }
     
-    function onButtonOut (evt) {
-        var btn = evt.target;
-        removeState(btn, hoverClass);
-    }
-        
-    function setState (btn, state, toggle) {
-        changeState(btn, state, toggle, true);
+    function removeClass (btn, state) {
+        changeClass(btn, state, false, false);
     }
     
-    function removeState (btn, state) {
-        changeState(btn, state, false, false);
-    }
-    
-    function changeState (btn, state, toggle, add) {
+    function changeClass (btn, state, toggle, add) {
         
-         if (btn === container) {
+        if (btn === container) {
             return;
         }
                 
@@ -137,6 +169,44 @@ function createButtons(config) {
     }
     function isNumber (nr) {
         return typeof nr === 'number' && nr === nr;
+    }
+    function findParentBtn (elm) {
+        
+        if (elm === container) {
+            return null;
+        }
+        if (buttons.indexOf(elm) >= 0) {
+            return elm;
+        }
+        return findParentBtn(elm.parentNode);       
+    }
+    function isEmptyObj (obj) {
+        return !obj || Object.getOwnPropertyNames(obj).length <= 0;
+    }
+    
+    function mergeObjs () {
+        
+        function merge(target, source) {
+            
+            if (isEmptyObj(source)) { return target; }
+
+            for (var prop in source) {
+                target[prop] = source[prop];
+            }
+            return target;
+        }
+        
+        var all = {};
+        
+        for (var i = arguments.length - 1; i > 0; i--) {
+            
+            var obj = arguments[i];
+            if (!isEmptyObj(obj)) {
+                merge(all, obj);            
+            }
+        } 
+                
+        return merge(arguments[0], all);
     }
 
 }

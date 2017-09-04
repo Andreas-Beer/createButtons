@@ -19,18 +19,28 @@
             
             .button {
                 background-color: #77f;
-                width: 100px;
-                height: 30px;
+                width: 150px;
+                height: 50px;
                 margin: 10px;
                 text-align: center;
                 padding-top: 6px;
             }
+            .button:hover,
+            .button.hover, 
+            .button:focus,      
+            .button.focus {
+                background-color: #33f;
+            } 
+            .button:active,
             .button.active {
                 background-color: #3c3;
             } 
-            .button.hover {
-                background-color: #c33;
-            } 
+            
+            .container {
+                border: 1px solid #000;
+                display: inline-block;
+                padding: 30px;
+            }
             
         </style>
         
@@ -38,17 +48,27 @@
     </head>
     <body>
         
-        <div id="container1"></div>
-        <div id="container2"></div>
+        <div id="container1" class="container"></div>
+        <div id="container2" class="container"></div>
+        <div id="container3" class="container"></div>
         
         
         <script src="js/createButtons_Vanilla.js"></script>
         <script>
             
             var aData = [
-                {text: 'btn1', attr: { class: "bla" }},
-                {text: 'btn2', attr: { id: "bla" }},
-                {text: 'btn3'}
+                {text: 'btn1'},
+                {text: 'btn2', attr: { id: "bla" } },
+                {text: '<p>btn3</p>'},
+                {html: '<p>btn4</p>', css: {color: 'white'} },
+                {text: 'foo'}
+            ];
+            
+            var aColors = [
+                { color: '#000' , css: { 'background-color': '#000' } },
+                { color: '#c33' , css: { 'background-color': '#c33' } },
+                { color: '#33c' , css: { 'background-color': '#33c' } },
+                { color: 'cyan' , css: { 'background-color': 'cyan' } }
             ];
             
         </script>
@@ -57,6 +77,14 @@
             createButtons({
                data: aData,
                container: document.getElementById('container1'),
+               css: {
+                   fontWeight: 'bold'
+               },
+               attr: {
+                   'data-foo': 123,
+                   id: 'foo',
+                   class: 'foo'
+               },
                onHover: function (data) {
                    
 //                   console.log(this);
@@ -64,6 +92,16 @@
                    
                }
             }).setActive(0);
+            
+            createButtons({
+               container: document.getElementById('container2'),
+               data: aData
+            });
+            
+            createButtons({
+                container: document.getElementById('container3'),
+                data: aColors
+            });
             
         </script>
     </body>
