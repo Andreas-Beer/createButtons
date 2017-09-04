@@ -1,15 +1,16 @@
 function createButtons(config, off) {
                    
-    off               = off                || [];
     var container     = this.nodeType && this.nodeType === 1 ? this : config.container;
     var data          = config.data;
     
+    off               = off                || [];
     var elementType   = config.type        || 'div';
+    var wrap          = config.wrap        || null;
 
     var callbacks     = {};
-    callbacks.active = config.onClick      || null;
-    callbacks.hover = config.onHover       || null;
-    callbacks.focus = config.onFocus       || null;
+    callbacks.active  = config.onClick     || null;
+    callbacks.hover   = config.onHover     || null;
+    callbacks.focus   = config.onFocus     || null;
     
     var classes       = {};
     classes.name      = config.className   || 'button';
@@ -24,11 +25,40 @@ function createButtons(config, off) {
     var buttons = [];    
     var currentState = {};
     
+    var defaults = {
+        css: {
+            outline: 'none'
+        },
+        attr: {
+            tabindex: 1
+        }
+    };
+    
     function main () {
         
         for (var i = 0; i < data.length; i++) {
-            buttons.push(createButton(i, data));
-            container.appendChild(buttons[i]);
+            
+            var btn = createButton(data[i], i);
+            
+            if (wrap) {
+                
+                var w;
+                
+                if (typeof wrap === 'object') {                    
+                    w = createWrapper(wrap, i);
+                } else {
+                    w = document.createElement(wrap);
+                }
+                
+                w.appendChild(btn);
+                btn = w;
+            }
+            
+            buttons.push(btn);
+        }
+        
+        for (var j = 0; j < buttons.length; j++) {
+            container.appendChild(buttons[j]);
         }
         
         installHandler();
@@ -40,47 +70,63 @@ function createButtons(config, off) {
     };
     return main();
 
-
-    function createButton(nr, data) {
-        
-        var text = data[nr].text || '';
-        var html = data[nr].html || '';
-        var css  = mergeObjs({}, globals.css,  data[nr].css);
-        var attr = mergeObjs({ tabindex: 1 }, globals.attr, data[nr].attr);
-        
-        var btn = document.createElement(elementType);
-        btn.className = classes.name;
-        btn.setAttribute('data-nr', nr);
-        btn.tabindex = 1;
+    function createButton(data, nr) {
                 
+        var btn = initElement(document.createElement(elementType), data, nr);     
+        btn.setAttribute('data-nr', nr);
+        btn.className = classes.name;
+            
+        if (!~off.indexOf(classes.focus)) {
+            btn.addEventListener('focus', onFocus);
+            btn.addEventListener('blur',  onBlur);
+        }
+        
+        return btn;
+    }
+    
+    function createWrapper (data, nr) {
+        
+        if (typeof data === 'string') {
+            return document.createElement(data);
+        }
+                        
+        var wrapper = initElement(document.createElement(data.type), data, nr);
+        wrapper.className = data.className || '';
+        
+        return wrapper;
+    }
+    
+    function initElement (elm, data, nr) {
+        
+        var text = data.text || '';
+        var html = data.html || '';
+        var css  = mergeObjs(data.css);
+        var attr = mergeObjs(data.attr);
+        
+        
         if (html) {
-            btn.innerHTML = html;
+            elm.innerHTML = html;
         } else if (text) {
-            btn.innerText = text;
+            elm.innerText = text;
         }
                 
         for (var rule in css) {
-            btn.style[rule] = css[rule];
+            elm.style[rule] = css[rule];
         }
         for (var a in attr) {
             
             if (a === 'class') {
-                btn.classList.add(attr[a]);
+                elm.classList.add(attr[a]);
                 break;
             }
             if (a === 'id') {
                 attr[a] += '_' + (+nr - 1);
             }
             
-            btn.setAttribute(a, attr[a]);
-        }
-                        
-        if (!~off.indexOf(classes.focus)) {
-            btn.addEventListener('focus', onFocus);
-            btn.addEventListener('blur',  onBlur);
-        }
-       
-        return btn;
+            elm.setAttribute(a, attr[a]);
+        } 
+        
+        return elm;
     }
     
     function installHandler() {
@@ -160,6 +206,9 @@ function createButtons(config, off) {
         }
         if (currentState[state]) {
             currentState[state].classList.remove(state);
+            if (currentState[state].classList.length === 0) {
+               currentState[state].removeAttribute('class'); 
+            }
         }
         if (!add || toggle && btn === currentState[state]) {
             currentState[state].classList.remove(state);
@@ -221,5 +270,5 @@ function createButtons(config, off) {
                 
         return merge(arguments[0], all);
     }
-
+    
 }
