@@ -1,14 +1,15 @@
-function createButtons(config) {
-            
-    var container       = this.nodeType && this.nodeType === 1 ? this : config.container;
-    var data        = config.data;
+function createButtons(config, off) {
+                   
+    off               = off                || [];
+    var container     = this.nodeType && this.nodeType === 1 ? this : config.container;
+    var data          = config.data;
     
     var elementType   = config.type        || 'div';
-    
+
     var callbacks     = {};
-    callbacks.click = config.onClick     || null;
-    callbacks.hover = config.onHover     || null;
-    callbacks.focus = config.onFocus     || null;
+    callbacks.active = config.onClick      || null;
+    callbacks.hover = config.onHover       || null;
+    callbacks.focus = config.onFocus       || null;
     
     var classes       = {};
     classes.name      = config.className   || 'button';
@@ -73,21 +74,37 @@ function createButtons(config) {
             
             btn.setAttribute(a, attr[a]);
         }
-        
-        btn.addEventListener('focus', onFocus);
-        btn.addEventListener('blur',  onBlur);
+                        
+        if (!~off.indexOf(classes.focus)) {
+            btn.addEventListener('focus', onFocus);
+            btn.addEventListener('blur',  onBlur);
+        }
        
         return btn;
     }
     
     function installHandler() {
-        container.addEventListener('click',     onClick);
-        container.addEventListener('mouseover', onMouseOver);
-        container.addEventListener('mouseout',  onMouseOut);
+                
+        if (!~off.indexOf(classes.active)) {
+            container.addEventListener('click',     onActive);
+        }
+        if (!~off.indexOf(classes.hover)) {
+            container.addEventListener('mouseover', onMouseOver);
+            container.addEventListener('mouseout',  onMouseOut);
+        }
+        if (!~off.indexOf(classes.focus)) {
+            container.addEventListener('keypress', onKeyDown);
+        }
+    }
+    
+    function onKeyDown (evt) {
+        if (evt.keyCode === 32 || evt.keyCode === 13) {
+            onActive(evt);
+        }
     }
 
-    function onClick (evt) {
-        addState(evt, classes.active, callbacks.click);
+    function onActive (evt) {
+        addState(evt, classes.active, callbacks.active);
     }
     
     function onMouseOver (evt) {
@@ -138,15 +155,12 @@ function createButtons(config) {
         if (btn === container) {
             return;
         }
-                
         if (isNumber(btn)) {
             btn = buttons[btn % buttons.length];
         }
-
         if (currentState[state]) {
             currentState[state].classList.remove(state);
         }
-        
         if (!add || toggle && btn === currentState[state]) {
             currentState[state].classList.remove(state);
             currentState[state] = null;
@@ -154,7 +168,6 @@ function createButtons(config) {
             btn.classList.add(state);
             currentState[state] = btn;
         }
-        
     }
     
     function callCB (fn, btn, nr) {

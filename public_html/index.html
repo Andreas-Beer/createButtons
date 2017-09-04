@@ -23,7 +23,11 @@
                 height: 50px;
                 margin: 10px;
                 text-align: center;
-                padding-top: 6px;
+                padding-top: 17px;
+            }
+            .button p {
+                margin: 0;
+                border: 1px solid #000;
             }
             .button:hover,
             .button.hover, 
@@ -38,8 +42,29 @@
             
             .container {
                 border: 1px solid #000;
-                display: inline-block;
+                float: left;
                 padding: 30px;
+            }
+            
+            .gallery .button {
+                background: #888;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+            }
+            .gallery .button.hover,
+            .gallery .button:hover,
+            .gallery .button.focus,
+            .gallery .button:focus {
+                background: #ddd;
+                outline: none;
+            }
+            .gallery .button.active,
+            .gallery .button:active {
+                background: #8d8;
+                outline: none;
+                border: 1px solid #888;
+                box-shadow: inset 0 1px 2px rgba(0,0,0,.8);
             }
             
         </style>
@@ -51,17 +76,17 @@
         <div id="container1" class="container"></div>
         <div id="container2" class="container"></div>
         <div id="container3" class="container"></div>
-        
+        <div id="container4" class="container gallery"></div>
         
         <script src="js/createButtons_Vanilla.js"></script>
         <script>
             
             var aData = [
-                {text: 'btn1'},
-                {text: 'btn2', attr: { id: "bla" } },
-                {text: '<p>btn3</p>'},
-                {html: '<p>btn4</p>', css: {color: 'white'} },
-                {text: 'foo'}
+                { text: 'btn1' },
+                { text: 'btn2', attr: { id: "bla" } },
+                { text: '<p>btn3</p>'},
+                { html: '<p>btn4</p>', css: {color: 'white'} },
+                { text: 'foo' }
             ];
             
             var aColors = [
@@ -69,6 +94,17 @@
                 { color: '#c33' , css: { 'background-color': '#c33' } },
                 { color: '#33c' , css: { 'background-color': '#33c' } },
                 { color: 'cyan' , css: { 'background-color': 'cyan' } }
+            ];
+            
+            var aGallery = [
+                {  },
+                {  },
+                {  },
+                {  },
+                {  },
+                {  },
+                {  },
+                {  }
             ];
             
         </script>
@@ -96,11 +132,19 @@
             createButtons({
                container: document.getElementById('container2'),
                data: aData
-            });
+            }, ['focus', 'hover']);
             
             createButtons({
                 container: document.getElementById('container3'),
-                data: aColors
+                data: aColors,
+                attr: {
+                    tabindex: -1
+                }
+            });
+            
+            createButtons({
+                container: document.getElementById('container4'),
+                data: aGallery
             });
             
         </script>
