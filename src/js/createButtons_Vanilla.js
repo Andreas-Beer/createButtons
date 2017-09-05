@@ -3,33 +3,31 @@ function createButtons(config, off) {
     var container     = this.nodeType && this.nodeType === 1 ? this : config.container;
     var data          = config.data;
     
-    off               = off                || [];
-    var elementType   = config.type        || 'div';
-    var wrap          = config.wrap        || null;
-
-    var callbacks     = {};
-    callbacks.active  = config.onClick     || null;
-    callbacks.hover   = config.onHover     || null;
-    callbacks.focus   = config.onFocus     || null;
-    
-    var classes       = {};
-    classes.name      = config.className   || 'button';
-    classes.active    = config.activeClass || 'active';
-    classes.hover     = config.hoverClass  || 'hover';
-    classes.focus     = config.hoverClass  || 'focus';
-    
-    var globals       = {};
-    globals.css       = config.css         || {};
-    globals.attr      = config.attr        || {};
-    
-    var buttons = [];    
-    var currentState = {};
-    
-    var defaults = {
-        css: {
+    var buttons       = [];    
+    var currentState  = {};
+    off               = off          || [];
+    var elementType   = config.type  || 'div';
+    var wrap          = config.wrap  || null;
+    var callbacks     = {
+        active  : config.onClick     || null,
+        hover   : config.onHover     || null,
+        focus   : config.onFocus     || null
+    };
+    var globals       = {
+        css     : config.css         || {},
+        attr    : config.attr        || {}
+    };
+    var classes       = {
+        name    : config.className   || 'button',
+        active  : config.classActive || 'active',
+        hover   : config.classHover  || 'hover',
+        focus   : config.classFocus  || 'focus'
+    };
+    var defaults      = {
+        css     : {
             outline: 'none'
         },
-        attr: {
+        attr    : {
             tabindex: 1
         }
     };
@@ -37,23 +35,7 @@ function createButtons(config, off) {
     function main () {
         
         for (var i = 0; i < data.length; i++) {
-            
             var btn = createButton(data[i], i);
-            
-            if (wrap) {
-                
-                var w;
-                
-                if (typeof wrap === 'object') {                    
-                    w = createWrapper(wrap, i);
-                } else {
-                    w = document.createElement(wrap);
-                }
-                
-                w.appendChild(btn);
-                btn = w;
-            }
-            
             buttons.push(btn);
         }
         
@@ -64,21 +46,37 @@ function createButtons(config, off) {
         installHandler();
         
         return {
-            buttons: buttons,
-            setActive: function (btn) { setClass(btn, classes.active); }
+            curr  : curr,
+            next  : next,
+            prev  : prev,
+            walk  : walk,
+            set   : set,
+            first : first,
+            last  : last,
+            add   : add
         };
     };
     return main();
 
     function createButton(data, nr) {
-                
-        var btn = initElement(document.createElement(elementType), data, nr);     
+        
+        var mergedData  = mergeObjs({}, data);
+        mergedData.css  = mergeObjs({}, defaults.css,  globals.css,  data.css);
+        mergedData.attr = mergeObjs({}, defaults.attr, globals.attr, data.attr);
+            
+        var btn = initElement(document.createElement(elementType), mergedData, nr);     
         btn.setAttribute('data-nr', nr);
         btn.className = classes.name;
-            
+                    
         if (!~off.indexOf(classes.focus)) {
             btn.addEventListener('focus', onFocus);
             btn.addEventListener('blur',  onBlur);
+        }
+        
+        if (wrap) {
+            var w = typeof wrap === 'object' ? createWrapper(wrap, nr) : document.createElement(wrap);            
+            w.appendChild(btn);
+            btn = w;
         }
         
         return btn;
@@ -100,9 +98,8 @@ function createButtons(config, off) {
         
         var text = data.text || '';
         var html = data.html || '';
-        var css  = mergeObjs(data.css);
-        var attr = mergeObjs(data.attr);
-        
+        var css  = data.css;
+        var attr = data.attr;
         
         if (html) {
             elm.innerHTML = html;
@@ -117,10 +114,10 @@ function createButtons(config, off) {
             
             if (a === 'class') {
                 elm.classList.add(attr[a]);
-                break;
+                continue;
             }
             if (a === 'id') {
-                attr[a] += '_' + (+nr - 1);
+                attr[a] += '_' + (+nr + 1);
             }
             
             elm.setAttribute(a, attr[a]);
@@ -223,6 +220,55 @@ function createButtons(config, off) {
         fn.call(btn, data[nr], data, nr);
     }
     
+    function walk(steps) {     
+        return buttons[(buttons.length + currIndex() + steps) % buttons.length];
+    }
+    function currIndex () {
+        var index = buttons.indexOf(currentState[classes.active]);
+        return !~index ? 0 : index;
+    }
+    
+    /*
+     * Interface
+     */
+    function first () {      
+        onActive({ target: set(0) });     
+        return currentState[classes.active];
+    }
+    function last () {      
+        onActive({ target: set(buttons.length - 1) });     
+        return currentState[classes.active];
+    }
+    function next () {      
+        onActive({ target: walk(1) });     
+        return currentState[classes.active];
+    }
+    function prev () {      
+        onActive({ target: walk(-1) });     
+        return currentState[classes.active];
+    }
+    function curr () {
+        onActive({ target: walk(0) }); 
+        return currentState[classes.active];
+    }
+    function set (index) {
+        onActive({ target: buttons[index % buttons.length] }); 
+        return currentState[classes.active];
+    }
+    
+    function add (newData) {
+        
+        if (isObject(newData)) {
+            newData = [newData];
+        }
+        for (var i = 0; i < newData.length; i++) {
+            var btn = createButton(newData[i], buttons.length);
+            buttons.push(btn);
+            data.push(newData[i]);
+            container.appendChild(btn); 
+        }
+    }
+    
     /*
      * HELPERS
      */
@@ -231,6 +277,12 @@ function createButtons(config, off) {
     }
     function isNumber (nr) {
         return typeof nr === 'number' && nr === nr;
+    }
+    function isObject (obj) {
+        return Boolean(typeof obj === 'object' && !obj.length && obj.constructor === Object);
+    }
+    function isArray (obj) {
+        return Boolean(typeof obj === 'object' && obj.length && obj.constructor === Array);
     }
     function findParentBtn (elm) {
         
@@ -260,7 +312,7 @@ function createButtons(config, off) {
         
         var all = {};
         
-        for (var i = arguments.length - 1; i > 0; i--) {
+        for (var i = 1; i < arguments.length; i++) {
             
             var obj = arguments[i];
             if (!isEmptyObj(obj)) {
